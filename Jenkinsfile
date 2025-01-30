@@ -62,45 +62,27 @@ pipeline {
                 echo "Docker image pushed successfully"
             }
         }
-
-       stage('Deploy to Prod') {
+        stage('Deploy to Prod') {
     steps {
-        script {
-            try {
-                // Verify cluster connection
-                sh 'kubectl config current-context'
-                
-                // Apply both Kubernetes configurations
-                sh '''
-                    kubectl apply -f deployment.yaml
-                    kubectl apply -f service.yaml
-                '''
-                
-                // Update the deployment with the new image tag
-                sh "kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}"
-                
-                // Wait for rollout to complete
-                sh 'kubectl rollout status deployment/flask-app'
-                
-                // Display status of all resources
-                sh '''
-                    echo "Checking deployment status..."
-                    kubectl get deployment flask-app
-                    
-                    echo "Checking pod status..."
-                    kubectl get pods -l app=flask-app
-                    
-                    echo "Checking service status..."
-                    kubectl get service flask-app-service
-                '''
-                
-            } catch (error) {
-                echo "Deployment failed: ${error}"
-                throw error
-            }
-        }
-        echo 'Deployment to Prod successful'
+        // Apply Kubernetes configurations
+        sh '''
+            kubectl apply -f deployment.yaml
+            kubectl apply -f service.yaml
+        '''
+        
+        // Update the deployment with the new image tag
+        sh "kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}"
+        
+        // Wait for rollout to complete
+        sh 'kubectl rollout status deployment/flask-app'
+        
+        // Get quick status overview
+        sh '''
+            kubectl get deployment flask-app
+            kubectl get service flask-app-service
+        '''
     }
 }
+       
     }
 }
