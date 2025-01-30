@@ -25,8 +25,11 @@ pipeline {
 
         stage('Test') {
             steps {
-                // Run pytest using python -m to avoid PATH issues
-                sh 'python -m pytest --maxfail=5 --disable-warnings -q'
+                // Check Python version
+                sh 'python3 --version'
+                
+                // Run pytest using python3 explicitly
+                sh 'python3 -m pytest --maxfail=5 --disable-warnings -q'
             }
         }
 
