@@ -4,51 +4,63 @@ pipeline {
     environment {
         IMAGE_NAME = 'suresh53/flask-app'
         IMAGE_TAG = "${IMAGE_NAME}:${env.GIT_COMMIT}"
+        KUBECONFIG = credentials('kubeconfig-cred')
+       
+        
     }
 
+    
     stages {
-
         stage('Setup') {
             steps {
-                // Install required dependencies
+                sh 'ls -la $KUBECONFIG'
+                sh 'chmod 644 $KUBECONFIG'
+                sh 'ls -la $KUBECONFIG'
                 sh "pip install -r requirements.txt"
-
-                // Check if pytest is installed
-                sh "pip show pytest || echo 'pytest not found, installation failed!'"
             }
         }
-
         stage('Test') {
             steps {
-                // Run pytest
-                sh "pytest || echo 'Tests failed'"
+                sh "pytest"
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Login to docker hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'DockerhubCred', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh 'echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin'
-                }
-                echo 'Login successful'
+                sh 'echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin'}
+                echo 'Login successfully'
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                // Build the Docker image
+        stage('Build Docker Image')
+        {
+            steps
+            {
                 sh 'docker build -t ${IMAGE_TAG} .'
-                echo "Docker image built successfully"
+                echo "Docker image build successfully"
                 sh 'docker image ls'
+                
             }
         }
 
-        stage('Push Docker Image') {
-            steps {
-                // Push the Docker image to the registry
+        stage('Push Docker Image')
+        {
+            steps
+            {
                 sh 'docker push ${IMAGE_TAG}'
-                echo "Docker image pushed successfully"
+                echo "Docker image push successfully"
             }
-        }      
+        }
+
+        stage('Deploy to Prod')
+        {
+            steps {
+                sh 'kubectl config current-context'
+                sh "kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}"
+            }
+        }       
+
+        
     }
 }
