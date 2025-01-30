@@ -25,8 +25,8 @@ pipeline {
 
         stage('Test') {
             steps {
-                // Run pytest to execute tests
-                sh 'pytest'
+                // Run pytest using python -m to avoid PATH issues
+                sh 'python -m pytest --maxfail=5 --disable-warnings -q'
             }
         }
 
