@@ -62,14 +62,26 @@ pipeline {
         }
 
         stage('Deploy to Prod') {
-            steps {
-                // Check the current Kubernetes context
-                sh 'kubectl config current-context'
+    steps {
+        script {
+            try {
+                // Debug steps
+                sh '''
+                    echo "Kubeconfig location: $KUBECONFIG"
+                    kubectl config view --minify
+                    kubectl cluster-info
+                '''
                 
-                // Update the Kubernetes deployment with the new image
-                sh "kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}"
-                echo 'Deployment to Prod successful'
+                // Update deployment with new image
+                sh '''
+                    kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}
+                    kubectl rollout status deployment/flask-app
+                '''
+            } catch (Exception e) {
+                error "Deployment failed: ${e.getMessage()}"
             }
         }
+    }
+}
     }
 }
