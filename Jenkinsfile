@@ -63,17 +63,44 @@ pipeline {
             }
         }
 
-        stage('Deploy to Prod') {
-            steps {
-                  // Explicitly set KUBECONFIG environment variable
-                 sh 'export KUBECONFIG=$KUBECONFIG'
-                // Check the current Kubernetes context
+       stage('Deploy to Prod') {
+    steps {
+        script {
+            try {
+                // Verify cluster connection
                 sh 'kubectl config current-context'
                 
-                // Update the Kubernetes deployment with the new image
+                // Apply both Kubernetes configurations
+                sh '''
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
+                '''
+                
+                // Update the deployment with the new image tag
                 sh "kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}"
-                echo 'Deployment to Prod successful'
+                
+                // Wait for rollout to complete
+                sh 'kubectl rollout status deployment/flask-app'
+                
+                // Display status of all resources
+                sh '''
+                    echo "Checking deployment status..."
+                    kubectl get deployment flask-app
+                    
+                    echo "Checking pod status..."
+                    kubectl get pods -l app=flask-app
+                    
+                    echo "Checking service status..."
+                    kubectl get service flask-app-service
+                '''
+                
+            } catch (error) {
+                echo "Deployment failed: ${error}"
+                throw error
             }
         }
+        echo 'Deployment to Prod successful'
+    }
+}
     }
 }
