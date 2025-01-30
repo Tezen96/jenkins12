@@ -65,6 +65,8 @@ pipeline {
 
         stage('Deploy to Prod') {
             steps {
+                  // Explicitly set KUBECONFIG environment variable
+                 sh 'export KUBECONFIG=$KUBECONFIG'
                 // Check the current Kubernetes context
                 sh 'kubectl config current-context'
                 
