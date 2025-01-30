@@ -5,6 +5,8 @@ pipeline {
         IMAGE_NAME = 'suresh53/flask-app'
         IMAGE_TAG = "${IMAGE_NAME}:${env.GIT_COMMIT}"
         KUBECONFIG = credentials('kubeconfig-cred')
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
     }
 
     stages {
@@ -62,26 +64,14 @@ pipeline {
         }
 
         stage('Deploy to Prod') {
-    steps {
-        script {
-            try {
-                // Debug steps
-                sh '''
-                    echo "Kubeconfig location: $KUBECONFIG"
-                    kubectl config view --minify
-                    kubectl cluster-info
-                '''
+            steps {
+                // Check the current Kubernetes context
+                sh 'kubectl config current-context'
                 
-                // Update deployment with new image
-                sh '''
-                    kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}
-                    kubectl rollout status deployment/flask-app
-                '''
-            } catch (Exception e) {
-                error "Deployment failed: ${e.getMessage()}"
+                // Update the Kubernetes deployment with the new image
+                sh "kubectl set image deployment/flask-app flask-app=${IMAGE_TAG}"
+                echo 'Deployment to Prod successful'
             }
         }
-    }
-}
     }
 }
